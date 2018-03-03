@@ -10,3 +10,12 @@ TODO:
 * remove sample_action: not needed
 * adjust convnets
 * set_seeds
+
+What do we want:
+* A2C
+* A3C
+* TRPO
+* ACKTR
+
+What can we add later:
+* PPO
