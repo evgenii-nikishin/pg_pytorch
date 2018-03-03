@@ -6,8 +6,8 @@ import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from agent import AgentA2C
-from utils import TrajStats, set_seeds
+from src.agent import AgentA2C
+from src.utils import TrajStats, set_seeds
 
 
 def learn(agent, env, n_episodes=20000, gamma=0.99, lambda_gae=0.95, entr_coef=1e-3, verbose=0):

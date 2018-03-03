@@ -8,8 +8,8 @@ from torch import optim
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from networks import FCNet
-from utils import TrajStats
+from src.networks import FCNet
+from src.utils import TrajStats
 
 
 class AgentA2C():
