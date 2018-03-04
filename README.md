@@ -2,12 +2,14 @@
 Library with implementation of most popular Policy Gradient methods for Reinforcement Learning
 
 TODO:
-* test gpu support
-* implement K-FAC optimizer for ConvNets
 * TRPO
+* set_seeds  - don't know how to
+* test gpu support
 * batch mode
+* asynchronous workflow
+* implement K-FAC optimizer for ConvNets
 * adjust convnets
-* set_seeds
+* adjust K-FAC for FCnets
 
 What do we want:
 * A2C
