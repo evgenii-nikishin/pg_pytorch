@@ -10,7 +10,7 @@ from src.agent import AgentA2C
 from src.utils import TrajStats, set_seeds
 
 
-def learn(agent, env, n_timesteps=1e5, gamma=0.99, lambda_gae=0.95, entr_coef=1e-3, log_interval=1e4):
+def learn(agent, env, optimizer, n_timesteps=1e5, gamma=0.99, lambda_gae=0.95, entr_coef=1e-3, log_interval=1e4):
     """
     Optimize networks parameters via interacting with env
     Arguments:
@@ -56,10 +56,10 @@ def learn(agent, env, n_timesteps=1e5, gamma=0.99, lambda_gae=0.95, entr_coef=1e
         #critic_loss  = 0.5*advantages.pow(2).sum()
         critic_loss  = 0.5*(ts.get_values() - episode_returns).pow(2).sum()
 
-        agent.optimizer.zero_grad()
+        optimizer.zero_grad()
         loss = actor_loss + critic_loss# - entr_coef * entropy
         loss.backward()
-        agent.optimizer.step()
+        optimizer.step()
 
 
 def main():
