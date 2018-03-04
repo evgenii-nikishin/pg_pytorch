@@ -10,6 +10,7 @@ def arr2var(x, cuda=False):
     var_x = Variable(torch.FloatTensor(x))
     return var_x.cuda() if cuda else var_x
 
+
 def set_seeds(env, seed, is_cuda):
     random.seed(seed)
     np.random.seed(seed)
@@ -17,6 +18,9 @@ def set_seeds(env, seed, is_cuda):
     env.seed(seed)
     if is_cuda and torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
+
+def stop_grad(x):
+    return Variable(torch.FloatTensor(x), requires_grad=False)
 
 class TrajStats:
     """
@@ -28,6 +32,7 @@ class TrajStats:
         self.rewards = []
         self.logs_pi_a = []
         self.values = []
+        self.logits = []
         
     def _is_cuda(self):
         """
@@ -37,7 +42,7 @@ class TrajStats:
         
         return self.values[0].is_cuda if len(self.values) > 0 else False
 
-    def append(self, r, log_pi_a, v):
+    def append(self, r, log_pi_a, v, logits):
         """
         Adds r(s_t, a_t), log pi(a_t | s_t), V(s_t)
         """
@@ -45,6 +50,7 @@ class TrajStats:
         self.rewards.append(r)
         self.logs_pi_a.append(log_pi_a)
         self.values.append(v)
+        self.logits.append(logits)
 
     def get_values(self):
         """
@@ -52,6 +58,13 @@ class TrajStats:
         """
 
         return torch.cat(self.values)
+
+    def get_logits(self):
+        """
+        Returns logits of pi(a | s) for each timestep
+        """
+
+        return torch.cat(map(lambda x: x.view(1, -1), self.logits))
        
     def calc_return(self, gamma):
         """
