@@ -25,7 +25,7 @@ class FCNet(nn.Module):
         self.n_actions = n_actions
         self.need_encode = need_encode
         
-        self.is_cuda = False
+        #self.is_cuda = False
         self._init_architecture()
         
     def _init_architecture(self):
@@ -48,7 +48,7 @@ class FCNet(nn.Module):
         for layer in self.layers:
             x = self.act(layer(x))
         return self.pi_head(x), self.value_head(x)
-    
+    '''
     def cuda(self):
         """
         Move nets to GPU
@@ -64,7 +64,7 @@ class FCNet(nn.Module):
 
         self.is_cuda = False
         return super(FCNet, self).cpu()
-    
+    '''
     def encode_state(self, state):
         """
         One-hot encode state

@@ -26,7 +26,7 @@ class AgentA2C(nn.Module):
         super(AgentA2C, self).__init__()
         self.env = env
         
-        self.is_cuda = False
+        #self.is_cuda = False
         self.n_actions = int(env.action_space.n)
 
         # init of AC nets depends on type of environment
@@ -43,7 +43,7 @@ class AgentA2C(nn.Module):
             raise ValueError('Unknown observation space')
         
         self.optimizer = optim.Adam(self.net.parameters())
-        
+    '''    
     def cuda(self):
         """
         Move model to GPU
@@ -59,7 +59,7 @@ class AgentA2C(nn.Module):
         self.is_cuda = False
         self.net.cpu()
         return super(AgentA2C, self).cpu()
-    
+    '''
     def forward(self, state):
         """
         Computes logits of pi(a | s) and V(s)

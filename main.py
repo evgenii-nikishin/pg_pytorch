@@ -74,6 +74,8 @@ def main():
 
     env = gym.make(args.env)
     agent = AgentA2C(env)
+    agent.cuda()
+    print(agent.is_cuda())
 
     set_seeds(env, args.seed)
     learn(agent, env, n_timesteps=args.n_timesteps, gamma=args.gamma, log_interval=args.log_interval)
