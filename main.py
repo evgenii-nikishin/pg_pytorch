@@ -70,12 +70,14 @@ def main():
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--log-interval', type=int, default=1e4)
     parser.add_argument('--save-path', default=None)
+    parser.add_argument('--cuda', type=bool, default=False)
     args = parser.parse_args()
 
     env = gym.make(args.env)
     agent = AgentA2C(env)
-    agent.cuda()
-    print(agent.is_cuda())
+    if args.cuda:
+        agent.cuda()
+        agent.net.is_cuda=True
 
     set_seeds(env, args.seed)
     learn(agent, env, n_timesteps=args.n_timesteps, gamma=args.gamma, log_interval=args.log_interval)

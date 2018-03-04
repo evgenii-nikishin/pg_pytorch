@@ -25,7 +25,7 @@ class FCNet(nn.Module):
         self.n_actions = n_actions
         self.need_encode = need_encode
         
-        #self.is_cuda = False
+        self.is_cuda = False
         self._init_architecture()
         
     def _init_architecture(self):
