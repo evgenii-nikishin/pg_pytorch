@@ -10,13 +10,13 @@ def arr2var(x, cuda=False):
     var_x = Variable(torch.FloatTensor(x))
     return var_x.cuda() if cuda else var_x
 
-def set_seeds(env, seed):#, is_cuda):
-    #random.seed(seed)
-    #np.random.seed(seed)
+def set_seeds(env, seed, is_cuda):
+    random.seed(seed)
+    np.random.seed(seed)
     torch.manual_seed(seed)
     env.seed(seed)
-#    if is_cuda:
-#        torch.cuda.manual_seed(seed)
+    if is_cuda and torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
 
 class TrajStats:
     """

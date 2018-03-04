@@ -9,7 +9,6 @@ from torch.autograd import Variable
 from src.agent import AgentA2C
 from src.utils import TrajStats, set_seeds
 
-
 def learn(agent, env, optimizer, n_timesteps=1e5, gamma=0.99, lambda_gae=0.95, entr_coef=1e-3, log_interval=1e4):
     """
     Optimize networks parameters via interacting with env
@@ -73,12 +72,16 @@ def main():
     parser.add_argument('--cuda', type=bool, default=False)
     args = parser.parse_args()
 
+    if args.cuda:
+        assert torch.cuda.is_available(), 'No available cuda devices'
+
     env = gym.make(args.env)
+    set_seeds(env, args.seed, args.cuda)
+
     agent = AgentA2C(env)
     if args.cuda:
         agent.cuda()
 
-    set_seeds(env, args.seed)
     optimizer = torch.optim.Adam(agent.parameters())
     learn(agent, env, optimizer, n_timesteps=args.n_timesteps, gamma=args.gamma, log_interval=args.log_interval)
     if not (args.save_path is None):
