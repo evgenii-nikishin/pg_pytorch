@@ -6,8 +6,9 @@ from torch import nn
 from torch.autograd import Variable
 
 
-def arr2var(x):
-    return Variable(torch.FloatTensor(x))
+def arr2var(x, cuda=False):
+    var_x = Variable(torch.FloatTensor(x))
+    return var_x.cuda() if cuda else var_x
 
 def set_seeds(env, seed):#, is_cuda):
     #random.seed(seed)
@@ -18,11 +19,24 @@ def set_seeds(env, seed):#, is_cuda):
 #        torch.cuda.manual_seed(seed)
 
 class TrajStats:
+    """
+        Class to efficiently store and operate with trajectory's data
+    """
+    
+   
     def __init__(self):
         self.rewards = []
         self.logs_pi_a = []
         self.values = []
         
+    def _is_cuda(self):
+        """
+        Check if data located on CUDA
+        Returns 'False' if no data available
+        """
+        
+        return self.values[0].is_cuda if len(self.values) > 0 else False
+
     def append(self, r, log_pi_a, v):
         """
         Adds r(s_t, a_t), log pi(a_t | s_t), V(s_t)
@@ -38,7 +52,7 @@ class TrajStats:
         """
 
         return torch.cat(self.values)
-        
+       
     def calc_return(self, gamma):
         """
         Calculates cumulative discounted rewards
@@ -54,12 +68,18 @@ class TrajStats:
         Calculates generalized advantage function for each timestep
         https://arxiv.org/abs/1506.02438
         """
-        if len(self.values) > 1:
-            next_v = torch.cat([torch.cat(self.values[1:]), Variable(torch.zeros(1))]).data
-        else:
-            next_v = torch.zeros(1)
+        assert len(self.values) > 0, "Storage must be non-empty"
+        
+        zero = torch.zeros(1)
+        rewards = torch.FloatTensor(self.rewards)
+        if self._is_cuda():
+            zero    = zero.cuda()
+            rewards = rewards.cuda()
             
-        target = Variable(torch.FloatTensor(self.rewards) + gamma * next_v, requires_grad=False)
+        next_v = torch.cat([torch.cat(self.values[1:]), Variable(zero)]).data \
+                    if len(self.values) > 1 else zero
+            
+        target = Variable(rewards + gamma * next_v, requires_grad=False)
         deltas = target - torch.cat(self.values)
         lg = lambda_gae * gamma
         
@@ -82,7 +102,7 @@ class TrajStats:
             G = G * gamma + r
             returns.append(G)
             
-        return arr2var(returns[::-1])
+        return arr2var(returns[::-1], cuda=self._is_cuda())
 
     def calc_advs(self, gamma, n_step=5):
         """

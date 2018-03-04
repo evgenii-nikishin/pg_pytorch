@@ -48,23 +48,7 @@ class FCNet(nn.Module):
         for layer in self.layers:
             x = self.act(layer(x))
         return self.pi_head(x), self.value_head(x)
-    '''
-    def cuda(self):
-        """
-        Move nets to GPU
-        """
 
-        self.is_cuda = True
-        return super(FCNet, self).cuda()
-    
-    def cpu(self):
-        """
-        Move nets to CPU
-        """
-
-        self.is_cuda = False
-        return super(FCNet, self).cpu()
-    '''
     def encode_state(self, state):
         """
         One-hot encode state

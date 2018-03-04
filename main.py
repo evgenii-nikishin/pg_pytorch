@@ -77,10 +77,10 @@ def main():
     agent = AgentA2C(env)
     if args.cuda:
         agent.cuda()
-        agent.net.is_cuda=True
 
     set_seeds(env, args.seed)
-    learn(agent, env, n_timesteps=args.n_timesteps, gamma=args.gamma, log_interval=args.log_interval)
+    optimizer = torch.optim.Adam(agent.parameters())
+    learn(agent, env, optimizer, n_timesteps=args.n_timesteps, gamma=args.gamma, log_interval=args.log_interval)
     if not (args.save_path is None):
         torch.save(agent.state_dict(), args.save_path)
 
