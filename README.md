@@ -3,8 +3,8 @@ Library with implementation of most popular Policy Gradient methods for Reinforc
 
 TODO:
 * TRPO
-* set_seeds  - don't know how to
-* test gpu support
+* set_seeds  - OK
+* test gpu support - OK
 * batch mode
 * asynchronous workflow
 * implement K-FAC optimizer for ConvNets
