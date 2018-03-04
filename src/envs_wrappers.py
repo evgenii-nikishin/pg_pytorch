@@ -1,6 +1,7 @@
 import numpy as np
 from multiprocessing import Process, Pipe
 
+
 def worker(remote, parent_remote, env_fn_wrapper):
     parent_remote.close()
     env = env_fn_wrapper#.x()
@@ -15,9 +16,6 @@ def worker(remote, parent_remote, env_fn_wrapper):
 	        elif cmd == 'reset':
 	            ob = env.reset()
 	            remote.send(ob)
-	        #elif cmd == 'reset_task':
-	        #    ob = env.reset_task()
-	        #    remote.send(ob)
 	        elif cmd == 'close':
 	            remote.close()
 	            break
@@ -46,10 +44,6 @@ class SubprocAsyncEnvs:
         for remote in self.work_remotes:
             remote.close()
 
-        #self.remotes[0].send(('get_spaces', None))
-        #observation_space, action_space = self.remotes[0].recv()
-        #VecEnv.__init__(self, len(env_fns), observation_space, action_space)
-
     def step_async(self, actions):
         for remote, action in zip(self.remotes, actions):
             remote.send(('step', action))
@@ -62,16 +56,9 @@ class SubprocAsyncEnvs:
         return np.stack(obs), np.stack(rews), np.stack(dones), infos
 
     def reset(self):
-        for j in range(1000000):
-            pass
         for remote in self.remotes:
             remote.send(('reset', None))
         return np.stack([remote.recv() for remote in self.remotes])
-
-    #def reset_task(self):
-    #    for remote in self.remotes:
-    #        remote.send(('reset_task', None))
-    #    return np.stack([remote.recv() for remote in self.remotes])
 
     def close(self):
         if self.closed:
