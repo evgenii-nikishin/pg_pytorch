@@ -22,7 +22,7 @@ def learn(agent, env, n_timesteps=1e5, gamma=0.99, lambda_gae=0.95, entr_coef=1e
         log_interval    --  number of timesteps to print debug info, int
     """
 
-    agent.net.train()
+    agent.train()
     returns = []
     timestep = 0
     episode = 0
@@ -68,7 +68,8 @@ def main():
     parser.add_argument('--seed', type=int, default=417)
     parser.add_argument('--n-timesteps', type=int, default=1e5)
     parser.add_argument('--gamma', type=float, default=0.99)
-    parser.add_argument('--log_interval', type=int, default=1e4)
+    parser.add_argument('--log-interval', type=int, default=1e4)
+    parser.add_argument('--save-path', default=None)
     args = parser.parse_args()
 
     env = gym.make(args.env)
@@ -76,6 +77,8 @@ def main():
 
     set_seeds(env, args.seed)
     learn(agent, env, n_timesteps=args.n_timesteps, gamma=args.gamma, log_interval=args.log_interval)
+    if not (args.save_path is None):
+        torch.save(agent.state_dict(), args.save_path)
 
 
 if __name__ == '__main__':

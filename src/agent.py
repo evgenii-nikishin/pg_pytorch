@@ -12,8 +12,8 @@ from src.networks import FCNet
 from src.utils import TrajStats
 
 
-class AgentA2C():
-    def __init__(self, env, gamma=0.99):
+class AgentA2C(nn.Module):
+    def __init__(self, env):
         """
         Constructor
         Arguments:
@@ -23,8 +23,8 @@ class AgentA2C():
             save_returns --  whether save returns on each steps, bool
         """
 
+        super(AgentA2C, self).__init__()
         self.env = env
-        self.gamma = gamma
         
         self.is_cuda = False
         self.n_actions = int(env.action_space.n)
@@ -70,16 +70,6 @@ class AgentA2C():
         state_enc = Variable(self.net.encode_state(state))
         return self.net(state_enc)
         
-    def get_distr(self, state):
-        """
-        Computes pi(a | s)
-        Arguments:
-            state   -- state for which actions distr. need to be computed
-        """
-
-        logits, _ = self.forward(state)
-        return F.softmax(logits, dim=-1)
-    
     def act(self, state):
         """
         Samples from pi(a | s)
@@ -87,11 +77,12 @@ class AgentA2C():
             state   -- state from which agent acts
         """
 
-        return torch.multinomial(self.get_distr(state), 1).data[0]
+        logits, _ = self.forward(state)
+        return torch.multinomial(F.softmax(logits, dim=-1), 1).data[0]
     
     def sample_action(self, logits):
         """
-        Added in order not to do forward pass two times
+        Added in order not to do forward pass two times during learning
         Arguments:
             logits  -- output of pi_head
         """
