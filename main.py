@@ -78,7 +78,7 @@ def main():
     if args.cuda:
         agent.cuda()
 
-    set_seeds(env, args.seed)
+    # set_seeds(env, args.seed)  # not working yet
     optimizer = torch.optim.Adam(agent.parameters())
     learn(agent, env, optimizer, n_timesteps=args.n_timesteps, gamma=args.gamma, log_interval=args.log_interval)
     if not (args.save_path is None):

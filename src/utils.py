@@ -11,8 +11,8 @@ def arr2var(x, cuda=False):
     return var_x.cuda() if cuda else var_x
 
 def set_seeds(env, seed):#, is_cuda):
-    #random.seed(seed)
-    #np.random.seed(seed)
+    random.seed(seed)
+    np.random.seed(seed)
     torch.manual_seed(seed)
     env.seed(seed)
 #    if is_cuda:
