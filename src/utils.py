@@ -19,9 +19,6 @@ def set_seeds(env, seed, is_cuda):
     if is_cuda and torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
 
-def stop_grad(x):
-    return Variable(torch.FloatTensor(x), requires_grad=False)
-
 class TrajStats:
     """
         Class to efficiently store and operate with trajectory's data
@@ -59,12 +56,18 @@ class TrajStats:
 
         return torch.cat(self.values)
 
+    def get_logs_pi_a(self):
+        """
+        Returns logs of prob of taken action for each timestep
+        """
+
+        return torch.cat(self.logs_pi_a)
+
     def get_logits(self):
         """
         Returns logits of pi(a | s) for each timestep
         """
-
-        return torch.cat(map(lambda x: x.view(1, -1), self.logits))
+        return torch.cat(list(map(lambda x: x.view(1, -1), self.logits)))
        
     def calc_return(self, gamma):
         """

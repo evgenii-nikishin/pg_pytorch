@@ -37,7 +37,7 @@ def learn(agent, env, optimizer, n_timesteps=1e5, gamma=0.99, lambda_gae=0.95, e
             a = agent.sample_action(logits)
             s_new, r, done, _ = env.step(a)
             
-            ts.append(r, F.log_softmax(logits, dim=-1)[a], value)
+            ts.append(r, F.log_softmax(logits, dim=-1)[a], value, logits)
             s = s_new
             timestep += 1
             if timestep % log_interval == 0:
@@ -49,8 +49,7 @@ def learn(agent, env, optimizer, n_timesteps=1e5, gamma=0.99, lambda_gae=0.95, e
         returns.append(ts.calc_return(gamma))
 
         #entropy      = -(aprobs_var * torch.exp(aprobs_var)).sum()
-        non_diff_advs = Variable(advantages.data, requires_grad=False)
-        actor_loss   = -(logs_pi * non_diff_advs).sum()  # minus added in order to ascend
+        actor_loss   = -(logs_pi * advantages.detach()).sum()  # minus added in order to ascend
 
         #critic_loss  = 0.5*advantages.pow(2).sum()
         critic_loss  = 0.5*(ts.get_values() - episode_returns).pow(2).sum()
