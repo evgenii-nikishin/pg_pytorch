@@ -31,6 +31,7 @@ class TrajStats:
         self.values = []
         self.logits = []
         self.states = []
+        self.actions = []
         
     def _is_cuda(self):
         """
@@ -40,7 +41,7 @@ class TrajStats:
         
         return self.values[0].is_cuda if len(self.values) > 0 else False
 
-    def append(self, r, log_pi_a, v, logits, s):
+    def append(self, r, log_pi_a, v, logits, s, a):
         """
         Adds r(s_t, a_t), log pi(a_t | s_t), V(s_t)
         """
@@ -50,7 +51,7 @@ class TrajStats:
         self.values.append(v)
         self.logits.append(logits)
         self.states.append(s)
-        self.actions.append(s)
+        self.actions.append(a)
 
     def get_values(self):
         """
