@@ -30,6 +30,7 @@ class TrajStats:
         self.logs_pi_a = []
         self.values = []
         self.logits = []
+        self.states = []
         
     def _is_cuda(self):
         """
@@ -39,7 +40,7 @@ class TrajStats:
         
         return self.values[0].is_cuda if len(self.values) > 0 else False
 
-    def append(self, r, log_pi_a, v, logits):
+    def append(self, r, log_pi_a, v, logits, s):
         """
         Adds r(s_t, a_t), log pi(a_t | s_t), V(s_t)
         """
@@ -48,6 +49,8 @@ class TrajStats:
         self.logs_pi_a.append(log_pi_a)
         self.values.append(v)
         self.logits.append(logits)
+        self.states.append(s)
+        self.actions.append(s)
 
     def get_values(self):
         """
@@ -68,6 +71,13 @@ class TrajStats:
         Returns logits of pi(a | s) for each timestep
         """
         return torch.cat(list(map(lambda x: x.view(1, -1), self.logits)))
+
+    def get_sar(self):
+        """
+        Returns sequence of states, actions and rewards (i.e. trajectory)
+        TODO: verify for continuous and 3d states
+        """
+        return zip(self.states, self.actions, self.rewards)
        
     def calc_return(self, gamma):
         """
@@ -93,7 +103,7 @@ class TrajStats:
             rewards = rewards.cuda()
             
         next_v = torch.cat([torch.cat(self.values[1:]), Variable(zero)]).data \
-                    if len(self.values) > 1 else zero
+                    if len(self.values) > 1 else Variable(zero)
             
         target = Variable(rewards + gamma * next_v, requires_grad=False)
         deltas = target - torch.cat(self.values)
