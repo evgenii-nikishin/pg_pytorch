@@ -8,8 +8,10 @@ from torch.autograd import Variable
 
 from src.agent import AgentA2C
 from src.utils import TrajStats, set_seeds
+from src.envs_wrappers import SubprocEnvs
 
-def learn(agent, env, optimizer, n_timesteps=1e5, gamma=0.99, lambda_gae=0.95, entr_coef=1e-3, log_interval=1e4):
+
+def learn(agent, envs, optimizer, n_timesteps=1e5, gamma=0.99, lambda_gae=0.95, entr_coef=1e-3, log_interval=1e4):
     """
     Optimize networks parameters via interacting with env
     Arguments:
@@ -20,47 +22,52 @@ def learn(agent, env, optimizer, n_timesteps=1e5, gamma=0.99, lambda_gae=0.95, e
         entr_coef       --  entropy loss multiplier, float
         log_interval    --  number of timesteps to print debug info, int
     """
+    n_envs = len(envs)
+    w_envs = SubprocEnvs(envs)
 
     agent.train()
     returns = []
     timestep = 0
+    timestep_diff = 0
     episode = 0
 
     while timestep < n_timesteps:
-        s = env.reset()
-        done = False
-        ts = TrajStats()
-        
+        states_alive = w_envs.reset()
+        tss = [TrajStats() for _ in range(n_envs)]
+
         episode += 1
-        while not done:
-            logits, value = agent.forward(s)
-            a = agent.sample_action(logits)
-            s_new, r, done, _ = env.step(a)
+        while w_envs.has_alive_envs():
+            logits, value = agent.forward(states_alive)
+            actions = agent.sample_action(logits)
+
+            ind_alive = w_envs.get_indices_alive()
+            states_new, rewards, done, _ = w_envs.step(actions)
             
-            ts.append(r, F.log_softmax(logits, dim=-1)[a], value, logits)
-            s = s_new
-            timestep += 1
-            if timestep % log_interval == 0:
-                print('{} timesteps, av. return: {:.3f}'.format(timestep, np.mean(returns[-50:])))
-        
-        advantages = ts.calc_gaes(gamma, lambda_gae)
-        episode_returns = ts.calc_episode_returns(gamma)
-        logs_pi = torch.cat(ts.logs_pi_a)
-        returns.append(ts.calc_return(gamma))
+            for i, i_alive in enumerate(ind_alive):
+                tss[i_alive].append(rewards[i], F.log_softmax(logits[i], dim=-1)[actions[i]], value[i], logits[i])
+            states_alive = states_new[np.logical_not(done)]
 
-        #entropy      = -(aprobs_var * torch.exp(aprobs_var)).sum()
-        actor_loss   = -(logs_pi * advantages.detach()).sum()  # minus added in order to ascend
+            timestep_diff += len(ind_alive)
+            timestep += len(ind_alive)
+            if timestep_diff >= log_interval:
+                timestep_diff -= log_interval
+                print('{} timesteps, av. return: {:.3f}'.format((timestep // log_interval) * log_interval, np.mean(returns[-50:])))
 
-        #critic_loss  = 0.5*advantages.pow(2).sum()
-        critic_loss  = 0.5*(ts.get_values() - episode_returns).pow(2).sum()
+        loss = Variable(torch.Tensor([0]))
+        for ts in tss:
+            traj_loss, traj_return = ts.calc_loss(gamma, lambda_gae)
+            returns.append(traj_return)
+            loss += traj_loss
 
         optimizer.zero_grad()
-        loss = actor_loss + critic_loss# - entr_coef * entropy
-        loss.backward()
+        (loss / n_envs).backward()
         optimizer.step()
+
+    w_envs.close()
 
 
 def main():
+    print ("note: 'ulimit -Sn 1024' if Errno 24")
     parser = argparse.ArgumentParser()
     parser.add_argument('--env', default='FrozenLake-v0')
     parser.add_argument('--seed', type=int, default=417)
@@ -68,24 +75,24 @@ def main():
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--log-interval', type=int, default=1e4)
     parser.add_argument('--save-path', default=None)
+    parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--cuda', type=bool, default=False)
     args = parser.parse_args()
 
     if args.cuda:
         assert torch.cuda.is_available(), 'No available cuda devices'
 
-    env = gym.make(args.env)
-    set_seeds(env, args.seed, args.cuda)
+    envs = [ gym.make(args.env) for _ in range(args.batch_size) ]
+    set_seeds(envs, args.seed, args.cuda)
 
-    agent = AgentA2C(env)
+    agent = AgentA2C(envs[0].observation_space, envs[0].action_space)
     if args.cuda:
         agent.cuda()
 
     optimizer = torch.optim.Adam(agent.parameters())
-    learn(agent, env, optimizer, n_timesteps=args.n_timesteps, gamma=args.gamma, log_interval=args.log_interval)
+    learn(agent, envs, optimizer, n_timesteps=args.n_timesteps, gamma=args.gamma, log_interval=args.log_interval, lambda_gae=0.99)
     if not (args.save_path is None):
         torch.save(agent.state_dict(), args.save_path)
-
 
 if __name__ == '__main__':
     main()

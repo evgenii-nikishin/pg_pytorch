@@ -5,7 +5,6 @@ import torch
 from torch import nn
 from torch.autograd import Variable
 
-
 def arr2var(x, cuda=False):
     var_x = Variable(torch.FloatTensor(x))
     return var_x.cuda() if cuda else var_x
@@ -14,10 +13,18 @@ def arr2var(x, cuda=False):
 def set_seeds(env, seed, is_cuda):
     random.seed(seed)
     np.random.seed(seed)
+
     torch.manual_seed(seed)
-    env.seed(seed)
     if is_cuda and torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
+
+    mod = max(seed, 1e3) ** 2
+    for e in env:
+        e.seed(np.random.randint(mod))
+
+    # reset seed for reproducibility without dependency on num. of envs
+    np.random.seed(seed)
+
 
 class TrajStats:
     """
@@ -26,13 +33,8 @@ class TrajStats:
     
    
     def __init__(self):
-        self.rewards = []
-        self.logs_pi_a = []
-        self.values = []
-        self.logits = []
-        self.states = []
-        self.actions = []
-        
+        self.clear()
+     
     def _is_cuda(self):
         """
         Check if data located on CUDA
@@ -41,7 +43,13 @@ class TrajStats:
         
         return self.values[0].is_cuda if len(self.values) > 0 else False
 
-    def append(self, r, log_pi_a, v, logits, s, a):
+    def clear(self):
+        self.rewards = []
+        self.logs_pi_a = []
+        self.values = []
+        self.logits = []
+
+    def append(self, r, log_pi_a, v, logits):
         """
         Adds r(s_t, a_t), log pi(a_t | s_t), V(s_t)
         """
@@ -50,8 +58,6 @@ class TrajStats:
         self.logs_pi_a.append(log_pi_a)
         self.values.append(v)
         self.logits.append(logits)
-        self.states.append(s)
-        self.actions.append(a)
 
     def get_values(self):
         """
@@ -154,6 +160,21 @@ class TrajStats:
         
         return advantages
 
+    def calc_loss(self, gamma, lambda_gae):
+        advantages = self.calc_gaes(gamma, lambda_gae)
+        episode_returns = self.calc_episode_returns(gamma)
+        logs_pi = torch.cat(self.logs_pi_a)
+        return_val = self.calc_return(gamma)
+
+        #entropy      = -(aprobs_var * torch.exp(aprobs_var)).sum()
+        non_diff_advs = Variable(advantages.data, requires_grad=False)
+        actor_loss   = -(logs_pi * non_diff_advs).sum()  # minus added in order to ascend
+
+        #critic_loss  = 0.5*advantages.pow(2).sum()
+        critic_loss  = 0.5*(self.get_values() - episode_returns).pow(2).sum()
+
+        loss = actor_loss + critic_loss
+        return loss, return_val
 
 # NOT FINISHED YET
 class Experience:

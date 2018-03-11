@@ -13,11 +13,10 @@ from src.utils import TrajStats
 
 
 class AgentA2C(nn.Module):
-    def __init__(self, env):
+    def __init__(self, observation_space, action_space):
         """
         Constructor
         Arguments:
-            env          --  environment
             gamma        --  discount factor, float
             lr           --  learning rate, float
             save_returns --  whether save returns on each steps, bool
@@ -25,18 +24,18 @@ class AgentA2C(nn.Module):
 
         super(AgentA2C, self).__init__()
         
-        self.env = env
-        self.n_actions = int(env.action_space.n)
+        self.observation_space = observation_space
+        self.n_actions = action_space.n
 
         # init of AC nets depends on type of environment
-        if type(env.observation_space) == gym.spaces.Discrete:
-            self.s_shape = (env.observation_space.n, )
+        if type(observation_space) == gym.spaces.Discrete:
+            self.s_shape = (observation_space.n, )
             self.net = FCNet(self.s_shape[0], self.n_actions, need_encode=True)
-        elif type(env.observation_space) == gym.spaces.Box and len(env.observation_space.shape) == 1:
-            self.s_shape = (env.observation_space.shape[0], )
+        elif type(observation_space) == gym.spaces.Box and len(observation_space.shape) == 1:
+            self.s_shape = (observation_space.shape[0], )
             self.net = FCNet(self.s_shape[0], self.n_actions, need_encode=False)
-        elif type(env.observation_space) == gym.spaces.Box and len(env.observation_space.shape) == 3:
-            self.s_shape = env.observation_space.shape
+        elif type(observation_space) == gym.spaces.Box and len(observation_space.shape) == 3:
+            self.s_shape = observation_space.shape
             self.net = ConvNets(self.s_shape, self.n_actions)
         else:
             raise ValueError('Unknown observation space')
@@ -57,26 +56,26 @@ class AgentA2C(nn.Module):
         self.net.is_cuda = False
         return super(AgentA2C, self).cpu()
 
-    def forward(self, state):
+    def forward(self, states):
         """
         Computes logits of pi(a | s) and V(s)
         Arguments:
-            state   -- state for which actions distr. need to be computed
+            states   -- states for which actions distr. need to be computed
         """
         
-        state_enc = Variable(self.net.encode_state(state))
+        state_enc = Variable(self.net.encode_states(states))
         
         return self.net(state_enc)
         
-    def act(self, state):
+    def act(self, states):
         """
         Samples from pi(a | s)
         Arguments:
             state   -- state from which agent acts
         """
 
-        logits, _ = self.forward(state)
-        return torch.multinomial(F.softmax(logits, dim=-1), 1).data[0]
+        logits, _ = self.forward(states)
+        return self.sample_action(logits)
     
     def sample_action(self, logits):
         """
@@ -84,14 +83,15 @@ class AgentA2C(nn.Module):
         Arguments:
             logits  -- output of pi_head
         """
-        return torch.multinomial(F.softmax(logits, dim=-1), 1).data[0]
+
+        return torch.multinomial(F.softmax(logits, dim=-1), 1).data
     
     def get_policy(self):
         """
         Returns pi(a | s) for all possible states
         """
 
-        if type(self.env.observation_space) != gym.spaces.Discrete:
+        if type(self.observation_space) != gym.spaces.Discrete:
             raise ValueError('Avaliable only for discrete state spaces')
 
         all_states = np.arange(self.s_shape[0])

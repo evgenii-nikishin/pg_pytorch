@@ -48,23 +48,6 @@ class FCNet(nn.Module):
         for layer in self.layers:
             x = self.act(layer(x))
         return self.pi_head(x), self.value_head(x)
-
-    def encode_state(self, state):
-        """
-        One-hot encode state
-        Arguments:
-            state   -- state to encode
-        """
-
-        if self.need_encode:
-            s_onehot = torch.zeros(self.n_states)
-            s_onehot[state] = 1.0
-        else:
-            s_onehot = torch.FloatTensor(state)
-        
-        if self.is_cuda:
-            s_onehot = s_onehot.cuda()
-        return s_onehot
     
     def encode_states(self, states):
         """
