@@ -48,16 +48,20 @@ class TrajStats:
         self.logs_pi_a = []
         self.values = []
         self.logits = []
+        self.states = []
+        self.actions = []
 
-    def append(self, r, log_pi_a, v, logits):
+    def append(self, r, log_pi_a, v, logits, s, a):
         """
-        Adds r(s_t, a_t), log pi(a_t | s_t), V(s_t)
+        Adds r(s_t, a_t), log pi(a_t | s_t), V(s_t), s_t, a_t
         """
 
         self.rewards.append(r)
         self.logs_pi_a.append(log_pi_a)
         self.values.append(v)
         self.logits.append(logits)
+        self.states.append(s)
+        self.actions.append(a)
 
     def get_values(self):
         """
