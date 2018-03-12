@@ -2,10 +2,8 @@
 Library with implementation of most popular Policy Gradient methods for Reinforcement Learning
 
 TODO:
-* TRPO
-* set_seeds  - OK
-* test gpu support - OK
-* batch mode
+* debug TRPO
+* effective vectorization with n-step returns
 * asynchronous workflow
 * implement K-FAC optimizer for ConvNets
 * adjust convnets
