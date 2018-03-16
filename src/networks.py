@@ -59,9 +59,9 @@ class FCNet(nn.Module):
         if self.need_encode:
             n = len(states)
             encoded = torch.zeros(n, self.n_states)
-            indices = np.array(
-                states[:,0] if len(states.shape) > 1 else states
-            )
+            indices = np.array(states)
+            #    states[:,0] if len(states.shape) > 1 else states
+            #)
             encoded[np.arange(n), indices] = 1.0
         else:
             encoded = torch.FloatTensor(states)
