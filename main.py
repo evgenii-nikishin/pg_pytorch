@@ -13,7 +13,9 @@ from src.envs_wrappers import SubprocEnvs
 from src.trpo import *
 
 
-def learn(agent, envs, update_rule, n_timesteps=1e5, gamma=0.99, lambda_gae=0.97, entr_coef=1e-3, log_interval=1e4):
+from src.kfac import KFAC_Optim
+
+def learn(agent, envs, update_rule, n_timesteps=1e5, gamma=0.99, lambda_gae=0.97, entr_coef=1e-3, max_kl=1e-2, log_interval=1e4):
     """
     Optimize networks parameters via interacting with env
     Arguments:
@@ -38,9 +40,8 @@ def learn(agent, envs, update_rule, n_timesteps=1e5, gamma=0.99, lambda_gae=0.97
         optimizer = optim.Adam(agent.parameters())
     elif update_rule == 'TRPO':
         optimizer = optim.Adam(agent.net.value_head.parameters())
-    elif update_tule == 'K-FAC':
-        raise NotImplementedError
-        optimizer = KFACOptimizer(agent.parameters())
+    elif update_rule == 'K-FAC':
+        optimizer = KFAC_Optim(agent, delta=max_kl)
     else:
         raise ValueError('Unknown update rule')
 
@@ -96,7 +97,7 @@ def learn(agent, envs, update_rule, n_timesteps=1e5, gamma=0.99, lambda_gae=0.97
                 kl += compute_kl(logits, logits.detach())
 
             flat_grads_kl = get_flat_grads(agent, kl, support_next_order=True)
-            hess_vec = lambda vec: hess_vec_full(vec, agent, flat_grads_kl, cg_damping)
+            hess_vec = lambda vec: hess_vec_full(vec, agent, flat_grads_kl, 1e-3)
 
             stepdir = cg(hess_vec, -flat_grads, cg_iters=10)
             shs = 0.5 * torch.dot(stepdir, hess_vec(stepdir))
@@ -123,6 +124,7 @@ def main():
     parser.add_argument('--seed', type=int, default=417)
     parser.add_argument('--n-timesteps', type=int, default=1e5)
     parser.add_argument('--gamma', type=float, default=0.99)
+    parser.add_argument('--max-kl', type=float, default=1e-2)
     parser.add_argument('--log-interval', type=int, default=1e4)
     parser.add_argument('--save-path', default=None)
     parser.add_argument('--batch-size', type=int, default=1)
@@ -141,7 +143,7 @@ def main():
         agent.cuda()
 
     learn(agent, envs, args.update_rule, n_timesteps=args.n_timesteps, gamma=args.gamma, 
-          log_interval=args.log_interval)
+          log_interval=args.log_interval, max_kl=args.max_kl)
     if not (args.save_path is None):
         torch.save(agent.state_dict(), args.save_path)
 
