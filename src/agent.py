@@ -12,7 +12,7 @@ from src.networks import FCNet
 from src.utils import TrajStats
 
 
-class AgentA2C(nn.Module):
+class Agent(nn.Module):
     def __init__(self, observation_space, action_space):
         """
         Constructor
@@ -22,7 +22,7 @@ class AgentA2C(nn.Module):
             save_returns --  whether save returns on each steps, bool
         """
 
-        super(AgentA2C, self).__init__()
+        super(Agent, self).__init__()
         
         self.observation_space = observation_space
         self.n_actions = action_space.n
@@ -46,7 +46,7 @@ class AgentA2C(nn.Module):
         """
 
         self.net.is_cuda = True
-        return super(AgentA2C, self).cuda()
+        return super(Agent, self).cuda()
 
     def cpu(self):
         """
@@ -54,7 +54,7 @@ class AgentA2C(nn.Module):
         """
         
         self.net.is_cuda = False
-        return super(AgentA2C, self).cpu()
+        return super(Agent, self).cpu()
 
     def forward(self, states):
         """
