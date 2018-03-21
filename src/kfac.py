@@ -8,7 +8,7 @@ import torch.nn as nn
 
 
 class KFAC_Optim(optim.Optimizer):
-    def __init__(self, model, lr=0.01, delta=1e-3, update_num_iters=1, eps=1e-6):
+    def __init__(self, model, cuda=False, lr=0.01, delta=1e-3, update_num_iters=1, eps=1e-6):
         '''
             model: it is exactly a model we want to optimize. Not model.parameters()
             lr: learning rate
@@ -87,6 +87,7 @@ class KFAC_Optim(optim.Optimizer):
                     module.__kfac_data__ = dict()
                     module.__kfac_data__['act_num'] = 0
                     module.__kfac_data__['grad_num'] = 0
+                    module.__kfac_data__['cuda'] = cuda
 
                 module.register_forward_pre_hook(forw_hook_lin)
                 module.register_backward_hook(back_hook_lin)
@@ -108,10 +109,16 @@ class KFAC_Optim(optim.Optimizer):
 
                     try:
                         if torch.norm(aaT).data.numpy()[0] < self.eps:
-                            aaT = aaT + Variable(self.eps * torch.randn(aaT.shape))
+                            if module.__kfac_data__['cuda']:
+                                aaT = aaT + Variable(self.eps * torch.randn(aaT.shape)).cuda()
+                            else:
+                                aaT = aaT + Variable(self.eps * torch.randn(aaT.shape))
 
                         if torch.norm(dLdLT).data.numpy()[0] < self.eps:
-                            dLdLT = dLdLT + Variable(self.eps * torch.randn(dLdLT.shape))
+                            if module.__kfac_data__['cuda']:
+                                dLdLT = dLdLT + Variable(self.eps * torch.randn(dLdLT.shape)).cuda()
+                            else:
+                                dLdLT = dLdLT + Variable(self.eps * torch.randn(dLdLT.shape))
 
                         U1, S1, V1 = torch.svd(aaT)
                         U2, S2, V2 = torch.svd(dLdLT)
@@ -129,12 +136,20 @@ class KFAC_Optim(optim.Optimizer):
                         module.__kfac_data__['inv_S1'] = inv_S1
                         module.__kfac_data__['inv_S2'] = inv_S2
                     except Exception as e:
-                        module.__kfac_data__['U1'] = Variable(torch.eye(aaT.shape[0]))
-                        module.__kfac_data__['V1'] = Variable(torch.eye(aaT.shape[0]))
-                        module.__kfac_data__['inv_S1'] = Variable(torch.ones(aaT.shape[0]))
-                        module.__kfac_data__['U2'] = Variable(torch.eye(dLdLT.shape[0]))
-                        module.__kfac_data__['V2'] = Variable(torch.eye(dLdLT.shape[0]))
-                        module.__kfac_data__['inv_S2'] = Variable(torch.ones(dLdLT.shape[0]))
+                        if module.__kfac_data__['cuda']:
+                            module.__kfac_data__['U1'] = Variable(torch.eye(aaT.shape[0])).cuda()
+                            module.__kfac_data__['V1'] = Variable(torch.eye(aaT.shape[0])).cuda()
+                            module.__kfac_data__['inv_S1'] = Variable(torch.ones(aaT.shape[0])).cuda()
+                            module.__kfac_data__['U2'] = Variable(torch.eye(dLdLT.shape[0])).cuda()
+                            module.__kfac_data__['V2'] = Variable(torch.eye(dLdLT.shape[0])).cuda()
+                            module.__kfac_data__['inv_S2'] = Variable(torch.ones(dLdLT.shape[0])).cuda()
+                        else:
+                            module.__kfac_data__['U1'] = Variable(torch.eye(aaT.shape[0]))
+                            module.__kfac_data__['V1'] = Variable(torch.eye(aaT.shape[0]))
+                            module.__kfac_data__['inv_S1'] = Variable(torch.ones(aaT.shape[0]))
+                            module.__kfac_data__['U2'] = Variable(torch.eye(dLdLT.shape[0]))
+                            module.__kfac_data__['V2'] = Variable(torch.eye(dLdLT.shape[0]))
+                            module.__kfac_data__['inv_S2'] = Variable(torch.ones(dLdLT.shape[0]))
 
                 U1 = module.__kfac_data__['U1']
                 U2 = module.__kfac_data__['U2']
@@ -188,7 +203,7 @@ class KFAC_Optim(optim.Optimizer):
                         nu_denom += (param.grad.view(param.grad.shape[0], -1) * param.grad.view(param.grad.shape[0],
                                                                                                 -1)).sum()
 
-        nu = min(1, sqrt(2 * self.delta / (abs(nu_denom.data.numpy()[0]) + self.eps)) / self.lr)
+        nu = min(1, sqrt(2 * self.delta / (abs(nu_denom.cpu().data.numpy()[0]) + self.eps)) / self.lr)
 
         # making step
         for name, module in model.named_modules():
