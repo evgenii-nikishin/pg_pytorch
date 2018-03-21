@@ -147,7 +147,7 @@ def main():
     rets = learn(agent, envs, args.update_rule, cuda=args.cuda, n_timesteps=args.n_timesteps, gamma=args.gamma,
           log_interval=args.log_interval, max_kl=args.max_kl)
 
-    torch.save(rets, "obama"+args.env+args.update_rule)
+    torch.save(rets, "./out/{}_{}".format(args.env, args.update_rule))
 
     if not (args.save_path is None):
         torch.save(agent.state_dict(), args.save_path)
