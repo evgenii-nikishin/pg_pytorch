@@ -3,7 +3,9 @@ from skimage.transform import resize
 
 import torch
 from torch import nn
+from torch.autograd import Variable
 
+from src.utils import Flatten
 
 class FCNet(nn.Module):
     """
@@ -72,7 +74,7 @@ class FCNet(nn.Module):
 
 
 # NOT FINISHED YET
-class ConvNets(nn.Module):
+class ConvNet(nn.Module):
     """
         Wrapper for Actor and Critic neural networks.
         Use this in games with image state space, e.g. Atari 2600
@@ -87,7 +89,7 @@ class ConvNets(nn.Module):
             inner_state_shape   -- shape of state represesentation in NNs, tuple
         """
 
-        super(ConvNets, self).__init__()
+        super(ConvNet, self).__init__()
         self.n_states = n_states
         self.n_actions = n_actions
         self.inner_state_shape = inner_state_shape
@@ -96,62 +98,48 @@ class ConvNets(nn.Module):
         # manual parameter, depends on architecture
         self.hidden_dim = 32 * 7 * 7
 
-        self._init_actor()
-        self._init_critic()    
-        
-    def _init_actor(self):
+        self._init_net_()
+
+    def _init_net_(self):
         """
         Initialize actor neural network
         """
 
-        self.actor_nn = nn.Sequential(
+        self.common_part = nn.Sequential(
             nn.Conv2d(self.n_states[2], 32, kernel_size=8, stride=4),
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=4, stride=2),
             nn.ReLU(),
             nn.Conv2d(64, 32, kernel_size=3, stride=1),
-            nn.ReLU(),
-            ReshapingLayer(-1, self.hidden_dim),
-            
-            nn.Linear(self.hidden_dim, 64),
-            nn.Tanh(),
-            nn.Linear(64, self.n_actions)
+            nn.ReLU()
         )
-        self.actor_nn[7].weight.data[0].normal_()
-        self.actor_nn[7].bias.data[0] = 0
-        self.actor_nn[9].weight.data[0].normal_()
-        self.actor_nn[9].bias.data[0] = 0
 
-    def _init_critic(self):
+        self.pi_head = nn.Sequential(nn.Linear(32 * 7 * 7, 64), nn.Tanh(), nn.Linear(64, self.n_actions))
+        self.value_head = nn.Sequential(nn.Linear(32 * 7 * 7, 64), nn.Tanh(), nn.Linear(64, 1))
+
+    def forward(self, x):
         """
-        Initialize critic neural network
+        Compute pi(a | s) and V(s)
         """
 
-        self.critic_nn = nn.Sequential(
-            nn.Conv2d(self.n_states[2], 32, kernel_size=8, stride=4),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2),
-            nn.ReLU(),
-            nn.Conv2d(64, 32, kernel_size=3, stride=1),
-            nn.ReLU(),
-            ReshapingLayer(-1, self.hidden_dim),
-            
-            nn.Linear(self.hidden_dim, 64),
-            nn.Tanh(),
-            nn.Linear(64, 1)
-        )
-        self.critic_nn[7].weight.data[0].normal_()
-        self.critic_nn[7].bias.data[0] = 0
-        self.critic_nn[9].weight.data[0].normal_()
-        self.critic_nn[9].bias.data[0] = 0
-    
+        x = self.encode_states(x)
+
+        if type(x) is not Variable:
+            x = Variable(x)
+
+        common = self.common_part(x)
+        common = common.view(common.shape[0], -1)
+
+
+        return self.pi_head(common), self.value_head(common)
+
     def cuda(self):
         """
         Move nets to GPU
         """
 
         self.is_cuda = True
-        return super(ConvNets, self).cuda()
+        return super(ConvNet, self).cuda()
     
     def cpu(self):
         """
@@ -159,7 +147,7 @@ class ConvNets(nn.Module):
         """
 
         self.is_cuda = False
-        return super(ConvNets, self).cpu()
+        return super(ConvNet, self).cpu()
     
     def preprocess_img(self, imgs):
         """
@@ -168,7 +156,13 @@ class ConvNets(nn.Module):
             imgs    -- array of images to resize 
         """
 
-        return resize(imgs, self.inner_state_shape, mode='reflect')
+        if type(imgs) is not np.ndarray:
+            imgs = imgs.data.numpy().copy()
+
+        if imgs.shape[1:] != self.inner_state_shape:
+            return torch.from_numpy(resize(imgs.astype(np.float), self.inner_state_shape, mode='reflect')).float()
+        else:
+            return torch.from_numpy(imgs.astype(np.float)).float()
     
     def encode_state(self, s):
         """
@@ -177,9 +171,8 @@ class ConvNets(nn.Module):
             state   -- state to encode
         """
 
-        enc = torch.FloatTensor(self.preprocess_img(s)).view(
-            (-1, self.n_states[2]) + self.inner_state_shape
-        )
+        enc = torch.FloatTensor(self.preprocess_img(s)).view((-1, self.n_states[2]) + self.inner_state_shape)
+
         if self.is_cuda:
             enc = enc.cuda()
         return enc
@@ -192,4 +185,8 @@ class ConvNets(nn.Module):
         """
         # NOTE: can be optimized
 
-        return torch.cat([self.encode_state(s) for s in states])
+        ans = torch.cat([self.encode_state(s) for s in states])
+        if type(ans) is Variable:
+            ans = ans.data
+
+        return ans

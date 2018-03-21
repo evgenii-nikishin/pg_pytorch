@@ -196,7 +196,7 @@ class Experience:
 
 
 # NOT FINISHED YET
-class ReshapingLayer(nn.Module):
+class Flatten(nn.Module):
     """
         Wrapper for 'reshape' 
         to embed this operation in nn.Sequential(...)
@@ -211,8 +211,7 @@ class ReshapingLayer(nn.Module):
             ReshapingLayer(10, 20, -1)
         """
 
-        super(ReshapingLayer, self).__init__()
-        self.shape = args
+        super(Flatten, self).__init__()
 
     def forward(self, x):
         """
@@ -221,4 +220,4 @@ class ReshapingLayer(nn.Module):
             x   --  input data, tensor
         """
 
-        return x.view(self.shape)
+        return x.view(x.shape[0], -1)

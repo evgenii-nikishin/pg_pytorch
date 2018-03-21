@@ -4,6 +4,7 @@ from torch import optim
 import torch.functional as F
 
 from math import sqrt
+import torch.nn as nn
 
 
 class KFAC_Optim(optim.Optimizer):

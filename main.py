@@ -11,8 +11,6 @@ from src.agent import Agent
 from src.utils import TrajStats, set_seeds
 from src.envs_wrappers import SubprocEnvs
 from src.trpo import *
-
-
 from src.kfac import KFAC_Optim
 
 def learn(agent, envs, update_rule, n_timesteps=1e5, gamma=0.99, lambda_gae=0.97, entr_coef=1e-3, max_kl=1e-2, log_interval=1e4):

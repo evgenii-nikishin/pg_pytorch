@@ -8,7 +8,7 @@ from torch import optim
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from src.networks import FCNet
+from src.networks import FCNet, ConvNet
 from src.utils import TrajStats
 
 
@@ -36,7 +36,7 @@ class Agent(nn.Module):
             self.net = FCNet(self.s_shape[0], self.n_actions, need_encode=False)
         elif type(observation_space) == gym.spaces.Box and len(observation_space.shape) == 3:
             self.s_shape = observation_space.shape
-            self.net = ConvNets(self.s_shape, self.n_actions)
+            self.net = ConvNet(self.s_shape, self.n_actions)
         else:
             raise ValueError('Unknown observation space')
     
