@@ -13,6 +13,8 @@ from src.envs_wrappers import SubprocEnvs
 from src.trpo import *
 from src.kfac import KFAC_Optim
 
+import pickle
+
 def learn(agent, envs, update_rule, n_timesteps=1e5, gamma=0.99, lambda_gae=0.97, entr_coef=1e-3, max_kl=1e-2, log_interval=1e4):
     """
     Optimize networks parameters via interacting with env
@@ -114,6 +116,8 @@ def learn(agent, envs, update_rule, n_timesteps=1e5, gamma=0.99, lambda_gae=0.97
         optimizer.step()
     w_envs.close()
 
+    return returns
+
 
 def main():
     print ("note: 'ulimit -Sn 1024' if Errno 24")
@@ -140,10 +144,14 @@ def main():
     if args.cuda:
         agent.cuda()
 
-    learn(agent, envs, args.update_rule, n_timesteps=args.n_timesteps, gamma=args.gamma, 
+    rets = learn(agent, envs, args.update_rule, n_timesteps=args.n_timesteps, gamma=args.gamma,
           log_interval=args.log_interval, max_kl=args.max_kl)
+
+    torch.save(rets, "obama"+args.env+args.update_rule)
+
     if not (args.save_path is None):
         torch.save(agent.state_dict(), args.save_path)
+
 
 if __name__ == '__main__':
     main()
