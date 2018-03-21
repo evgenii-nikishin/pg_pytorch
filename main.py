@@ -15,7 +15,7 @@ from src.kfac import KFAC_Optim
 
 import pickle
 
-def learn(agent, envs, update_rule, n_timesteps=1e5, gamma=0.99, lambda_gae=0.97, entr_coef=1e-3, max_kl=1e-2, log_interval=1e4):
+def learn(agent, envs, update_rule, cuda=False, n_timesteps=1e5, gamma=0.99, lambda_gae=0.97, entr_coef=1e-3, max_kl=1e-2, log_interval=1e4):
     """
     Optimize networks parameters via interacting with env
     Arguments:
@@ -41,7 +41,7 @@ def learn(agent, envs, update_rule, n_timesteps=1e5, gamma=0.99, lambda_gae=0.97
     elif update_rule == 'TRPO':
         optimizer = optim.Adam(agent.net.value_head.parameters())
     elif update_rule == 'K-FAC':
-        optimizer = KFAC_Optim(agent, delta=max_kl)
+        optimizer = KFAC_Optim(agent, delta=max_kl, cuda=cuda)
     else:
         raise ValueError('Unknown update rule')
 
@@ -144,7 +144,7 @@ def main():
     if args.cuda:
         agent.cuda()
 
-    rets = learn(agent, envs, args.update_rule, n_timesteps=args.n_timesteps, gamma=args.gamma,
+    rets = learn(agent, envs, args.update_rule, cuda=args.cuda, n_timesteps=args.n_timesteps, gamma=args.gamma,
           log_interval=args.log_interval, max_kl=args.max_kl)
 
     torch.save(rets, "obama"+args.env+args.update_rule)
