@@ -3,9 +3,9 @@ Library with implementation of most popular Policy Gradient methods for Reinforc
 
 TODO:
 * effective vectorization with n-step returns
-* asynchronous workflow
+* more detailed documentation
 
-What do we want:
+What do we have:
 * A2C
 * TRPO
 * ACKTR

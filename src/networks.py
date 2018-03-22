@@ -42,6 +42,21 @@ class FCNet(nn.Module):
         self.pi_head = nn.Linear(64, self.n_actions)
         self.value_head = nn.Linear(64, 1)
         
+    def _init_architecture2(self):
+        self.layers = nn.ModuleList()
+        self.act = nn.Tanh()
+        
+        self.pi_head = nn.Sequential( 
+            nn.Linear(self.n_states, 64),
+            nn.Tanh(),
+            nn.Linear(64, self.n_actions)
+        )
+        self.value_head = nn.Sequential( 
+            nn.Linear(self.n_states, 64),
+            nn.Tanh(),
+            nn.Linear(64, 1)
+        )
+        
     def forward(self, x):
         """
         Compute pi(a | s) and V(s)

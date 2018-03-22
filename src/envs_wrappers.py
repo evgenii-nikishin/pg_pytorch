@@ -2,9 +2,9 @@ import numpy as np
 from src.utils import TrajStats
 from multiprocessing import Process, Pipe
 
-def SubprocEnvs_worker(remote, parent_remote, env_fn_wrapper):
+def SubprocEnvs_worker(remote, parent_remote, env_wrapper):
     parent_remote.close()
-    env = env_fn_wrapper#.x()
+    env = env_wrapper
     try:
         while True:
             cmd, data = remote.recv()
@@ -36,7 +36,7 @@ class SubprocEnvs:
 
     def _init_processes(self, env_fns, worker):
         self.remotes, self.work_remotes = zip(*[Pipe() for _ in range(self.nenvs)])
-        self.ps = [Process(target=worker, args=(work_remote, remote, env_fn)) #CloudpickleWrapper(env_fn)))
+        self.ps = [Process(target=worker, args=(work_remote, remote, env_fn))
             for (work_remote, remote, env_fn) in zip(self.work_remotes, self.remotes, env_fns)]
         for p in self.ps:
             p.daemon = True # if the main process crashes, we should not cause things to hang
@@ -78,7 +78,6 @@ class SubprocEnvs:
         if self.closed:
             return
         for remote in self.remotes:
-            #remote.recv()
             remote.send(('close', None))
         for p in self.ps:
             p.join()
