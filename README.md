@@ -1,6 +1,6 @@
-### A library with implementations of most popular Policy Gradient methods for Reinforcement Learning
+### A library with implementations of popular Policy Gradient methods for Reinforcement Learning
 
-#### Include the following algorithms:
+#### Includes the following algorithms:
 * [A2C](https://arxiv.org/abs/1602.01783)
 * [TRPO](https://arxiv.org/abs/1502.05477)
 * [ACKTR](https://arxiv.org/abs/1708.05144)
