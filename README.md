@@ -1,4 +1,10 @@
-### Library with implementations of most popular Policy Gradient methods for Reinforcement Learning
+### A library with implementations of most popular Policy Gradient methods for Reinforcement Learning
+
+#### Include the following algorithms:
+* [A2C](https://arxiv.org/abs/1602.01783)
+* [TRPO](https://arxiv.org/abs/1502.05477)
+* [ACKTR](https://arxiv.org/abs/1708.05144)
+
 
 The code is organized as follows:
 * **src/agent.py**: implementations of Agent.
@@ -9,24 +15,16 @@ The code is organized as follows:
 * **src/utils.py**: utils for models and optimizers
 
 
-#### What do we have:
-* A2C
-* TRPO
-* ACKTR
-
-#### What can we add later:
-* PPO
-* A3C
-
-#### TODOs
+#### TODO:
 
 * effective vectorization with n-step returns
-* more detailed documentation
+* PPO
+* A3C
 
 ------------------------------------------
 
 Code is developed and supported by:
-* Eugenii Nikishin [nikishin-evg](https://github.com/nikishin-evg) (*nikishin.evg@gmail.com*)
+* Evgenii Nikishin [nikishin-evg](https://github.com/nikishin-evg) (*nikishin.evg@gmail.com*)
 * Iurii Kemaev [hbq1](https://github.com/hbq1) (*y.kemaev@gmail.com*)
 * Maxim Kuznetsov [binom16](https://github.com/binom16) (*binom16@gmail.com*)
 
